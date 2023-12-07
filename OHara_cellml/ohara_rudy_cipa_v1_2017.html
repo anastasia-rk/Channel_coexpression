@@ -1,0 +1,52 @@
+<html>
+  <head>
+    <title>
+      O'Hara-Rudy CiPA v1.0 (2017)
+    </title>
+  </head>
+  <body>
+    <h3>
+      Model Status
+    </h3>
+    <p>
+      This CellML version of the model has been converted to Chaste C++ code using PyCML and then checked against the FDA's R code which is <a href="https://github.com/FDA/CiPA/blob/master/AP_simulation/models/newordherg_qNet.c">available on Github</a>. 
+We curated the model by comparing derivatives through an action potential - these match to an absolute tolerance of at worst 1e-10 for every state variable, both in the control situation and after addition of a simulated drug as used in the papers below.
+    </p>
+    <h3>
+      Model Structure. 
+    </h3>
+<p>
+The model structure follows O'Hara-Rudy (2011), with a new hERG model structure and optimised ion channel conductances for studies involving drug action.
+There is a parameter called 'celltype' that specifies whether this is set as a [sub]endocardial cell (celltype 0), an 
+</p>
+    <table class="tmp-doc-informalfigure">
+      <tr class="tmp-doc-informalfigure">
+        <td class="tmp-doc-informalfigure">
+          <img class="tmp-doc-informalfigure" alt="O'Hara model schematic" src="http://journals.plos.org/ploscompbiol/article/figure/image?id=10.1371/journal.pcbi.1002061.g005&size=medium">
+        </td>
+      </tr>
+      <tr class="tmp-doc-informalfigure">
+        <td class="tmp-doc-informalfigure-caption">
+          <p>
+            Schematic diagram of the Cell Model, taken from the <a href="http://journals.plos.org/ploscompbiol/article/figure?id=10.1371/journal.pcbi.1002061.g005">original O'Hara-Rudy paper</a> under the CC-BY licence.
+          </p>
+        </td>
+      </tr>
+    </table>
+	<p>
+The code is associated with this paper:
+<p>
+KC Chang, S Dutta, GR Mirams, KA Beattie, J Sheng, PN Tran, M Wu, WW Wu, T Colatsky, DG Strauss, Z Li (2017)
+Uncertainty Quantification Reveals the Importance of Data Variability and Experimental Design Considerations for in Silico Proarrhythmia Risk Assessment Frontiers in Physiology 8:917. <a href="http://dx.doi.org/10.3389/fphys.2017.00917">doi:10.3389/fphys.2017.00917</a>.
+</p>           
+ The ion current optimisation is described in this paper:
+          </p>
+          <p>
+Dutta S, Chang KC, Beattie KA, Sheng J, Tran PN, Wu WW, Wu M, Strauss DG, Colatsky T, Li Z. (2017). Optimization of an In silico Cardiac Cell Model for Proarrhythmia Risk Assessment. Frontiers in Physiology. <a href="http://dx.doi.org/10.3389/fphys.2017.00616">doi:10.3389/fphys.2017.00616</a>.
+          </p>
+The dynamic model of drug binding to hERG is described in this paper:
+<p>
+Li Z, Dutta S, Sheng J, Tran PN, Wu W, Chang K, Mdluli T, Strauss DG, Colatsky T. (2017) Improving the In Silico Assessment of Proarrhythmia Risk by Combining hERG (Human Ether-à-go-go-Related Gene) Channel–Drug Binding Kinetics and Multichannel Pharmacology. Circulation: Arrhythmia and Electrophysiology. 2017;10:e004628. <a href="http://dx.doi.org/10.1161/CIRCEP.116.004628">doi:10.1161/CIRCEP.116.004628</a>.
+</p>
+  </body>
+</html>
