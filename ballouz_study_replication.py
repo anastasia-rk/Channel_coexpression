@@ -22,23 +22,28 @@ if __name__ == '__main__':
     if not os.path.exists(DataFolderName):
         os.makedirs(DataFolderName)
     # load the model and protocol
-    model, protocol, embedded_script = mk.load('OHara_cellml/OHR_chaning_conductances.mmt')
-    currentNamesInMMT = ['IKr.IKr', 'IKs.IKs', 'Ito.Ito', 'INa.INa', 'ICaL.ICaL']
+    # model, protocol, embedded_script = mk.load('OHara_cellml/OHR_chaning_conductances.mmt')
+    model, protocol, embedded_script = mk.load('OHara_cellml/OHR_endo.mmt')
+    currentNamesInMMT = ['IKr.IKr', 'IKs.IKs', 'Ito.Ito', 'INaL.INaL','INa.INa', 'ICaL.ICaL']
     s = mk.Simulation(model, protocol)
-    # d = s.run(1000)
-    # s.reset()      # resets the state of the simulation
     vars_to_log = ['environment.time', 'membrane.v'] + currentNamesInMMT
-    d_OHR_basic = s.run(1000,log=vars_to_log)
+    t_sim = 500
     # change the constants to mean values suggested in Tbale 1 in Mann et al. 2016
-    ohr_baseline_conductances = []
     multipliers_from_mann = [1.00, 5.75, 2.01, 1.00, 2.95, 9.12] #the ones corresponding to conductances in the paper
+    multipliers_from_mann_w_lqt3 = [1.00, 5.75, 2.01, 1.00, 2.95, 9.12] #the ones corresponding to conductances in the paper
+    multipliers_from_mann_adrenergic = [1.00, 5.75*1.55, 2.01*4.69, 4.48, 2.95, 9.12]  # the Mann et.al. adrenergic
     multipliers_from_krogh = [1.17, 8.09, 3.57, 3.05, 1.7, 1.91]
-    additional_multipliers_from_mann = [4.48, 1.55, 4.69] # the ones denoted by S varibales in the paper
+    multipliers_from_krogh_lqts = [1.42, 9.71, 9.59, 1.75, 4.86, 7.40]
     constant_names_in_OHR = ['IKr.GKr_b', 'IKs.GKs_b','ICaL.PCa_b', 'INaL.GNaL_b', 'INaCa_i.Gncx_b', 'INaK.Pnak_b']
     # baseline_conductances_OHR = [4.65854545454545618e-2, 6.35800000000000080e-3, 0.0001007, 1.99574999999999753e-2, 0.0008, 30] # taken from the mmt file
-    baseline_conductances_OHR = [0.046, 0.0034, 0.0001, 0.0075, 0.0008,30] # taken directly from Rudy Lab
+    baseline_conductances_OHR = [0.046, 0.0034, 0.0001, 0.0075, 0.0008, 30] # taken directly from Rudy Lab
     # simulate baseline model with params from Rudy lab
-    # get new conductances by multiplying the baseline conductances by the multipliers
+    for iConductance, conductance in enumerate(baseline_conductances_OHR):
+        s.set_constant(constant_names_in_OHR[iConductance], conductance)
+    d_OHR_basic = s.run(t_sim, log=vars_to_log)
+    ###################################################################################################################
+    # get new conductances by multiplying the baseline conductances by the  baseline multipliers from Mann et.al.
+    s.reset()  # resets the state of the simulation
     modified_conductances_OHR = []
     for i in range(len(baseline_conductances_OHR)):
         modified_conductances_OHR.append(baseline_conductances_OHR[i] * multipliers_from_mann[i])
@@ -46,44 +51,71 @@ if __name__ == '__main__':
     for iConductance, conductance in enumerate(modified_conductances_OHR):
         s.set_constant(constant_names_in_OHR[iConductance], conductance)
     # run the simulation
+    d_OHR_modified = s.run(t_sim,log=vars_to_log)
+    ###################################################################################################################
+    # andrergic scalars added
     s.reset()  # resets the state of the simulation
-    d_OHR_modified = s.run(1000,log=vars_to_log)
-    # try with the krogh values for multipliers
     modified_conductances_OHR = []
     for i in range(len(baseline_conductances_OHR)):
-        modified_conductances_OHR.append(baseline_conductances_OHR[i] * multipliers_from_krogh[i])
+        modified_conductances_OHR.append(baseline_conductances_OHR[i] * multipliers_from_mann_adrenergic[i])
     # set the new conductances in the model
     for iConductance, conductance in enumerate(modified_conductances_OHR):
         s.set_constant(constant_names_in_OHR[iConductance], conductance)
     # run the simulation
-    s.reset()      # resets the state of the simulation
-    d_OHR_krogh = s.run(1000,log=vars_to_log)
-    # further modify the conductances of excangers - placeholder fo this here!!
-
+    d_OHR_andrergic = s.run(t_sim, log=vars_to_log)
+    ###################################################################################################################
+    # try with the krogh values found by fitting to LQT markers
+    s.reset()
+    modified_conductances_OHR = []
+    for i in range(len(baseline_conductances_OHR)):
+        modified_conductances_OHR.append(baseline_conductances_OHR[i] * multipliers_from_krogh_lqts[i])
+    # set the new conductances in the model
+    for iConductance, conductance in enumerate(modified_conductances_OHR):
+        s.set_constant(constant_names_in_OHR[iConductance], conductance)
+      # resets the state of the simulation
+    d_OHR_krogh_lqts = s.run(t_sim, log=vars_to_log)
+    ###################################################################################################################
+    # try with the krogh values for multipliers
+    s.reset()  # resets the state of the simulation
+    modified_conductances_OHR_to_use = []
+    for i in range(len(baseline_conductances_OHR)):
+        modified_conductances_OHR_to_use.append(baseline_conductances_OHR[i] * multipliers_from_krogh[i])
+    # set the new conductances in the model
+    for iConductance, conductance in enumerate(modified_conductances_OHR_to_use):
+        s.set_constant(constant_names_in_OHR[iConductance], conductance)
+    # run the simulation
+    d_OHR_krogh = s.run(t_sim, log=vars_to_log)
 
     # plot the results for the original and modified model
-    currentNamesInMMT = ['IKr.IKr', 'IKs.IKs', 'Ito.Ito', 'INa.INa', 'ICaL.ICaL']
-    ylabels = [r'$V$, mV', r'$I_{Kr}$, ', r'$I_{Ks}$, A/F', r'$I_{to}$, A/F', r'$I_{Na}$, A/F', r'$I_{CaL}$, A/F']
+    currentNamesInMMT = ['IKr.IKr', 'IKs.IKs', 'Ito.Ito', 'INaL.INaL', 'ICaL.ICaL']
+    ylabels = [r'$V$, mV', r'$I_{Kr}$, ', r'$I_{Ks}$, A/F', r'$I_{to}$, A/F', r'$I_{NaL}$, A/F', r'$I_{CaL}$, A/F']
     fig, axs = plt.subplots(2, 3, figsize=(20, 10))
     axs = axs.flatten()
     axs[0].plot(d_OHR_basic.time(), d_OHR_basic['membrane.v'])  # plot the voltage separately
     axs[0].plot(d_OHR_modified.time(), d_OHR_modified['membrane.v'])
+    axs[0].plot(d_OHR_andrergic.time(), d_OHR_andrergic['membrane.v'])
     axs[0].plot(d_OHR_krogh.time(), d_OHR_krogh['membrane.v'])
+    axs[0].plot(d_OHR_krogh_lqts.time(), d_OHR_krogh_lqts['membrane.v'])
     for iCurrent, currentName in enumerate(currentNamesInMMT):
         # plot the current
-        if iCurrent == 1:
+        if iCurrent == 4:
             axs[iCurrent + 1].plot(d_OHR_basic.time(), d_OHR_basic[currentName], label="OHR original")
-            axs[iCurrent + 1].plot(d_OHR_modified.time(), d_OHR_modified[currentName], label="Mann et.al. multipliers")
-            axs[iCurrent + 1].plot(d_OHR_krogh.time(), d_OHR_krogh[currentName], label="Krogh-Madsen et.al.  multipliers")
+            axs[iCurrent + 1].plot(d_OHR_modified.time(), d_OHR_modified[currentName], label="Mann et.al. base multipliers")
+            axs[iCurrent + 1].plot(d_OHR_andrergic.time(), d_OHR_andrergic[currentName], label="Mann et.al. adrenergic multipliers")
+            axs[iCurrent + 1].plot(d_OHR_krogh.time(), d_OHR_krogh[currentName], label="Krogh-Madsen et.al.  multipliers (global)")
+            axs[iCurrent + 1].plot(d_OHR_krogh_lqts.time(), d_OHR_krogh_lqts[currentName],
+                                   label="Krogh-Madsen et.al.  multipliers (APD fit)")
         else:
             axs[iCurrent + 1].plot(d_OHR_basic.time(), d_OHR_basic[currentName])
             axs[iCurrent + 1].plot(d_OHR_modified.time(), d_OHR_modified[currentName])
+            axs[iCurrent + 1].plot(d_OHR_andrergic.time(), d_OHR_andrergic[currentName])
             axs[iCurrent + 1].plot(d_OHR_krogh.time(), d_OHR_krogh[currentName])
+            axs[iCurrent + 1].plot(d_OHR_krogh_lqts.time(), d_OHR_krogh_lqts[currentName])
     for ax in axs:
         ax.set_xlabel('time, s')
         ax.set_ylabel(ylabels[axs.tolist().index(ax)])
     # legend for one of the axes only
-    axs[2].legend()
+    axs[5].legend()
     fig.suptitle(r'Original OHara-Rudy model vs Modifications', fontsize=14)
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(FigureFolderName+'/OHR_models_one_pace.png', dpi=300)
@@ -91,7 +123,8 @@ if __name__ == '__main__':
 
 
     ## try altering conductances in the model
-    model, protocol, embedded_script = mk.load('OHara_cellml/OHR_chaning_conductances.mmt')
+    model, protocol, embedded_script = mk.load('OHara_cellml/OHR_endo.mmt')
+    currentNamesInMMT = ['IKr.IKr', 'IKs.IKs', 'Ito.Ito', 'INaL.INaL','INa.INa', 'ICaL.ICaL']
     ########################################################################################################################
     # set up the simulation - this is the same for all configurations
     s = mk.Simulation(model, protocol)
@@ -107,12 +140,15 @@ if __name__ == '__main__':
     currentNamesInMMT = ['IKr.IKr', 'IKs.IKs', 'Ito.Ito', 'INa.INa', 'ICaL.ICaL']
     conductanceNamesInMMT = ['IKr.GKr_b', 'IKs.GKs_b', 'Ito.Gto_b', 'INa.GNa', 'ICaL.PCa_b']
     gainNames = ['gain_kr', 'gain_ks', 'gain_to', 'gain_na', 'gain_ca']
-    baselineConductances = [4.65854545454545618e-2, 6.35800000000000080e-3, 0.02, 75, 0.0001007]
+    baselineConductances = [0.046, 0.0034, 0.02, 75, 0.0001]
     print('baseline conductances before modification: ', baselineConductances)
+    # make sure that we have set the correct conductance values for channels that are not going to be varied in the study
+    for iConductance, conductance in enumerate(modified_conductances_OHR_to_use):
+        s.set_constant(constant_names_in_OHR[iConductance], conductance)
     # in the baselineConductances list, replace the values by the value in modified_conductances_OHR
     for iConductance, conductanceName in enumerate(conductanceNamesInMMT):
         if conductanceName in constant_names_in_OHR:
-            baselineConductances[iConductance] = modified_conductances_OHR[constant_names_in_OHR.index(conductanceName)]
+            baselineConductances[iConductance] = modified_conductances_OHR_to_use[constant_names_in_OHR.index(conductanceName)]
     print('baseline conductances after modification: ', baselineConductances)
     ylabels = [r'$V$, mV', r'$I_{Kr}$, ', r'$I_{Ks}$, A/F', r'$I_{to}$, A/F', r'$I_{Na}$, A/F', r'$I_{CaL}$, A/F']
 ########################################################################################################################

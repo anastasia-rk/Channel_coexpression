@@ -979,7 +979,7 @@ ffrt = physical_constants.F * frt
     in [s^4*A^2/g/m^2/mol]
 frt = physical_constants.F / (physical_constants.R * physical_constants.T)
     in [1/mV]
-i_Stim_Amplitude = -40 [A/F]
+i_Stim_Amplitude = -80 [A/F]
     in [A/F]
     oxmeta: membrane_stimulus_current_amplitude
 i_Stim_End = 1e17 [ms]
@@ -1060,7 +1060,7 @@ Jtr = (intracellular_ions.cansr - intracellular_ions.cajsr) / 100 [ms]
 
 [[protocol]]
 # Level  Start    Length   Period   Multiplier
-1.0      10.0     1.0      1000.0   0
+1.0      10.0     0.5      1000.0   0
 
 [[script]]
 import matplotlib.pyplot as plt
