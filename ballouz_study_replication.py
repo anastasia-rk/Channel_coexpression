@@ -9,6 +9,7 @@ import os
 import gc
 import pickle
 from tqdm import tqdm
+import probscale
 matplotlib.use('Agg') # to turn off interractive mode
 
 # main
@@ -32,14 +33,16 @@ if __name__ == '__main__':
     multipliers_from_mann = [1.00, 5.75, 2.01, 1.00, 2.95, 9.12] #the ones corresponding to conductances in the paper
     multipliers_from_mann_w_lqt3 = [1.00, 5.75, 2.01, 1.00, 2.95, 9.12] #the ones corresponding to conductances in the paper
     multipliers_from_mann_adrenergic = [1.00, 5.75*1.55, 2.01*4.69, 4.48, 2.95, 9.12]  # the Mann et.al. adrenergic
-    multipliers_from_krogh = [1.17, 8.09, 3.57, 3.05, 1.7, 1.91]
-    multipliers_from_krogh_lqts = [1.42, 9.71, 9.59, 1.75, 4.86, 7.40]
+    multipliers_from_krogh = [1.17, 8.09, 3.57, 1.7, 3.05, 1.91] # this is what is used in Ballouz (see supplementary Figure S4 B)
+    multipliers_from_krogh_lqts = [1.42, 9.71, 9.59,  4.86, 1.75, 7.40]
+    multipliers_from_ballouz = [1.17, 8.09, 3.57, 1.7, 3.05, 1.91]
     constant_names_in_OHR = ['IKr.GKr_b', 'IKs.GKs_b','ICaL.PCa_b', 'INaL.GNaL_b', 'INaCa_i.Gncx_b', 'INaK.Pnak_b']
     # baseline_conductances_OHR = [4.65854545454545618e-2, 6.35800000000000080e-3, 0.0001007, 1.99574999999999753e-2, 0.0008, 30] # taken from the mmt file
     baseline_conductances_OHR = [0.046, 0.0034, 0.0001, 0.0075, 0.0008, 30] # taken directly from Rudy Lab
     # simulate baseline model with params from Rudy lab
     for iConductance, conductance in enumerate(baseline_conductances_OHR):
         s.set_constant(constant_names_in_OHR[iConductance], conductance)
+    d = s.run(1000000, log=vars_to_log)
     d_OHR_basic = s.run(t_sim, log=vars_to_log)
     ###################################################################################################################
     # get new conductances by multiplying the baseline conductances by the  baseline multipliers from Mann et.al.
@@ -51,6 +54,7 @@ if __name__ == '__main__':
     for iConductance, conductance in enumerate(modified_conductances_OHR):
         s.set_constant(constant_names_in_OHR[iConductance], conductance)
     # run the simulation
+    d = s.run(1000000, log=vars_to_log)
     d_OHR_modified = s.run(t_sim,log=vars_to_log)
     ###################################################################################################################
     # andrergic scalars added
@@ -62,6 +66,7 @@ if __name__ == '__main__':
     for iConductance, conductance in enumerate(modified_conductances_OHR):
         s.set_constant(constant_names_in_OHR[iConductance], conductance)
     # run the simulation
+    d = s.run(1000000, log=vars_to_log)
     d_OHR_andrergic = s.run(t_sim, log=vars_to_log)
     ###################################################################################################################
     # try with the krogh values found by fitting to LQT markers
@@ -73,6 +78,7 @@ if __name__ == '__main__':
     for iConductance, conductance in enumerate(modified_conductances_OHR):
         s.set_constant(constant_names_in_OHR[iConductance], conductance)
       # resets the state of the simulation
+    d = s.run(1000000,log=vars_to_log)
     d_OHR_krogh_lqts = s.run(t_sim, log=vars_to_log)
     ###################################################################################################################
     # try with the krogh values for multipliers
@@ -84,6 +90,7 @@ if __name__ == '__main__':
     for iConductance, conductance in enumerate(modified_conductances_OHR_to_use):
         s.set_constant(constant_names_in_OHR[iConductance], conductance)
     # run the simulation
+    d = s.run(1000000, log=vars_to_log)
     d_OHR_krogh = s.run(t_sim, log=vars_to_log)
 
     # plot the results for the original and modified model
@@ -359,6 +366,7 @@ if __name__ == '__main__':
         axs1[iAxs].scatter(simulationResults['gain_ca'], biomarkers[biomarker], s=5, label=r'Gain on $I_{CaL}$')
         axs1[iAxs].set_xlabel(r'Expression gain values')
         axs1[iAxs].set_ylabel(biomarker)
+        axs1[iAxs].set_xscale('symlog')
         if iAxs == 2:
             axs1[iAxs].legend()
         iAxs += 1
@@ -572,6 +580,7 @@ if __name__ == '__main__':
         axs1[iAxs].scatter(simulationResults['gain_ca'], biomarkers[biomarker], s=5, label=r'Gain on $I_{CaL}$')
         axs1[iAxs].set_xlabel(r'Expression gain values')
         axs1[iAxs].set_ylabel(biomarker)
+        axs1[iAxs].set_xscale('symlog')
         if iAxs == 2:
             axs1[iAxs].legend()
         iAxs += 1
