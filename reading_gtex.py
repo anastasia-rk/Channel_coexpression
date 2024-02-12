@@ -44,13 +44,28 @@ if __name__ == '__main__':
     axs = axs.ravel()
     for iAx,ax in enumerate(axs):
         # plot values starting from column with index 3
-        ax.scatter(gtex_df.iloc[0,3:], gtex_df.iloc[iAx+1,3:],s=5,marker='.',alpha=0.5,label='Heart - Left Ventricle')
+        ax.scatter(gtex_df.iloc[0,3:], gtex_df.iloc[iAx+1,3:],s=5,marker='.',alpha=0.5, color='magenta',label='Heart - Left Ventricle')
         ax.scatter(gtex_high_rin_df.iloc[0, 3:], gtex_high_rin_df.iloc[iAx + 1, 3:], s=7, marker='o',color='darkorange',label='RIN > 7.0')
         ax.set(xlabel='KCNH2, TMP', ylabel=genes_of_interest[iAx+1]+',TMP')
         if iAx == 0:
             ax.legend()
     fig.tight_layout(pad=0.3)
     plt.savefig('correlation_GTEx.png')
+
+    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+    axs = axs.ravel()
+    for iAx,ax in enumerate(axs):
+        # plot values starting from column with index 3
+        ax.scatter(gtex_df.iloc[0,3:]/np.mean(gtex_df.iloc[0,3:]), gtex_df.iloc[iAx+1,3:]/np.mean(gtex_df.iloc[iAx+1,3:]),s=5,marker='.',alpha=0.5, color='magenta',label='Heart - Left Ventricle')
+        ax.scatter(gtex_high_rin_df.iloc[0, 3:]/np.mean(gtex_high_rin_df.iloc[0, 3:]), gtex_high_rin_df.iloc[iAx + 1, 3:]/np.mean(gtex_high_rin_df.iloc[iAx + 1, 3:]), s=7, marker='o',color='darkorange',label='RIN > 7.0')
+        ax.set(xlabel='KCNH2, fraction of mean TMP', ylabel=genes_of_interest[iAx+1]+',fraction of mean TMP')
+        ax.plot([0,4],[0,4], '--k', alpha=0.5, label='z1=z2')
+        ax.set_xlim(0, 4)
+        ax.set_ylim(0, 4)
+        if iAx == 0:
+            ax.legend()
+    fig.tight_layout(pad=0.3)
+    plt.savefig('correlation_scaled_GTEx.png')
 
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
     axs = axs.ravel()
@@ -143,7 +158,7 @@ if __name__ == '__main__':
         cnt = axs[ikey].contour(np.exp(x), np.exp(y), z, cmap='plasma',levels=6)
         axs[ikey].clabel(cnt, cnt.levels, inline = True, fontsize = 10)
         # plot x=y line in dashed black
-        axs[ikey].plot(np.exp(x[0,:]), np.exp(x[0,:]), '--k',alpha=0.5,label='x=y')
+        axs[ikey].plot(np.exp(x[0,:]), np.exp(x[0,:]), '--k',alpha=0.5,label='z1=z2')
         axs[ikey].set_xlim(0, 100)
         axs[ikey].set_ylim(0, 60)
         axs[ikey].set_xlabel('KCNH2, TPM')
@@ -151,6 +166,37 @@ if __name__ == '__main__':
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
     plt.savefig('contour_bivariate_decimal.png')
+
+    # plot for scaled stuff
+    from matplotlib import patches
+    fig, axs = plt.subplots(2, 2, figsize=(10,10))
+    axs = axs.ravel()
+    for ikey, key in enumerate(covariances_log.keys()):
+        mean_bivar = [0, 0]
+        cov_bivar  = covariances_log[key]
+        # create a mesh grid with x and y values bounded by +- 3 standard deviations
+        x, y = np.meshgrid(np.linspace(mean_bivar[0] - 3 * np.sqrt(cov_bivar[0,0]), mean_bivar[0] + 3 * np.sqrt(cov_bivar[0,0]), 100),
+                            np.linspace(mean_bivar[1] - 3 * np.sqrt(cov_bivar[1,1]), mean_bivar[1] + 3 * np.sqrt(cov_bivar[1,1]), 100))
+        # compute the bivariate normal pdf on the mesh grid
+        z = np.exp(sp.stats.multivariate_normal.pdf(np.dstack((x, y)), mean=mean_bivar, cov=cov_bivar))
+        # normalize the pdf
+        z = z / np.max(z)
+        # plot the contour
+        cnt = axs[ikey].contour(np.exp(x), np.exp(y), z, cmap='plasma',levels=6)
+        axs[ikey].clabel(cnt, cnt.levels, inline = True, fontsize = 10)
+        # plot x=y line in dashed black
+        axs[ikey].plot([0,4], [0,4], '--k',alpha=0.5,label='z1=z2')
+        # axs[ikey].plot([0, 1], [1, 1], '-k', alpha=0.3)
+        # axs[ikey].plot([1, 1], [0, 1], '-k', alpha=0.3)
+        axs[ikey].add_patch(patches.Rectangle((0, 0), 1, 1, edgecolor='none',
+                                       facecolor='orange', alpha=0.3, label='KCNH2 < mean KCNH2, '+key+' < mean '+key))
+        axs[ikey].set_xlim(0, 4)
+        axs[ikey].set_ylim(0, 4)
+        axs[ikey].set_xlabel('KCNH2,  franction of mean TPM')
+        axs[ikey].set_ylabel(key+', fraction of mean TPM')
+        axs[ikey].legend()
+    fig.tight_layout(pad=0.3)
+    plt.savefig('contour_bivariate_decimal_scaled.png')
 
     # for each entry in covariances_log, create a bivariate normal distribution with mean_log and covariances_log
     # and sample from it

@@ -33,17 +33,29 @@ if __name__ == '__main__':
         if a2_as_fn_of_s1s2[0] == a2_as_fn_of_s1s2[1]:
             print('the solutions for s2 are identical')
     ####################################################################################################################
-    # assign values to c1, c2, d1, d2, s1, s2 - from Eichel et.al. for hERG and SCN5A
+    # # assign values to c1, c2, d1, d2, s1, s2 - from Eichel et.al. for hERG and SCN5A
+    # c1_val = 0.17
+    # c2_val = 0.18
+    # d1_val = 0.48
+    # d2_val = 0.70
+    # s1_eichel = 0.5
+    # s2_eichel = 0.58
+    # cond_frac_herg_eichel = 0.411
+    # cond_frac_scn5a_eichel = 0.619
+    # gene_labels = ['hERG', 'SCN5A']
+    # paperName = 'Eichel et.al.'
+    ####################################################################################################################
+    # assign values to c1, c2, d1, d2, s1, s2 - from Jameson et.al. for hERG and CACNA1C
     c1_val = 0.17
-    c2_val = 0.18
-    d1_val = 0.48
-    d2_val = 0.70
-    s1_eichel = 0.5
-    s2_eichel = 0.58
+    c2_val = 0.17
+    d1_val = 0.345
+    d2_val = 0.72
+    s1_eichel = 0.52
+    s2_eichel = 0.56
     cond_frac_herg_eichel = 0.411
-    cond_frac_scn5a_eichel = 0.619
-    gene_labels = ['hERG', 'SCN5A']
-    paperName = 'Eichel et.al.'
+    cond_frac_scn5a_eichel = 0.32
+    gene_labels = ['hERG', 'CACNA1C']
+    paperName = 'Jameson et.al.'
     # substitute values into the solution for a1 and a2
     a1_as_fn_of_s1s2_hERG = []
     a2_as_fn_of_s1s2_SCN5A = []
@@ -127,7 +139,7 @@ if __name__ == '__main__':
     #     ax.set_zlabel(r'$\alpha_{' + str(i+1) + '}$')
     #     ax.set_title(gene_labels[i] + ': solution 2')
     # plt.tight_layout(pad=0.3, w_pad=0.5, h_pad=0.5)
-    plt.savefig('Figures/alphas_as_function_of_kappas.png')
+    plt.savefig('Figures/'+ gene_labels[0]+'_'+gene_labels[1]+'_alphas_as_function_of_kappas.png')
     ####################################################################################################################
     # model of the transaltion process
     # define symbolic variables
@@ -183,7 +195,7 @@ if __name__ == '__main__':
         ax.legend(loc='upper right',fontsize=10)
         ax.set_title(gene_labels[i])
     plt.tight_layout(pad=0.3, w_pad=0.5, h_pad=0.5)
-    plt.savefig('Figures/lambdas_as_function_of_kappas.png')
+    plt.savefig('Figures/'+ gene_labels[0]+'_'+gene_labels[1]+'_lambdas_as_function_of_kappas.png')
     print(gene_labels[0] + ' protein generaton: ' + str(l1_experiment) + ' p1')
     print(gene_labels[1] + ' protein generation: ' + str(l2_experiment) + ' p2')
     print('pause here')
@@ -203,25 +215,28 @@ if __name__ == '__main__':
     l2_sample = l2_as_fn_of_s1s2_SCN5A_val(transcript_levels[:,0], transcript_levels[:,1])
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     axes = axes.ravel()
-    axes[0].scatter(transcript_levels[:,0],transcript_levels[:,1], color='k', s=5, alpha=0.7)
+    axes[0].scatter(transcript_levels[:,0],transcript_levels[:,1], color='k', s=5, alpha=0.35)
     axes[0].scatter(s1_eichel, s2_eichel, color='orange', s=25, label=paperName)
     axes[0].set_xlabel(r'$\kappa_1$')
     axes[0].set_ylabel(r'$\kappa_2$')
     axes[0].legend(loc='lower right', fontsize=10)
     axes[0].set_title('Total mRNA fraction')
-    axes[1].scatter(a1_sample, a1a2_sample, color='k', s=5, alpha=0.7)
+    axes[1].scatter(a1_sample, a1a2_sample, color='k', s=5, alpha=0.35)
     axes[1].scatter(a1_experiment, a1_experiment*a2_experiment, color='magenta', s=25,  label='Transformed')
     axes[1].set_xlabel(r'$\alpha_1$')
     axes[1].set_ylabel(r'$\alpha_1\alpha_2$')
     axes[1].legend(loc='lower right', fontsize=10)
     axes[1].set_title('Free mRNA fraction')
-    axes[2].scatter(l1_sample, l2_sample, color='k', s=5, alpha=0.7)
+    axes[2].scatter(l1_sample, l2_sample, color='k', s=5, alpha=0.35)
     axes[2].scatter(l1_experiment, l2_experiment, color='magenta', s=25, label='Transformed')
     axes[2].scatter(cond_frac_herg_eichel, cond_frac_scn5a_eichel, color='orange', s=25, label=paperName)
     axes[2].set_xlabel(r'$\lambda_1$')
     axes[2].set_ylabel('$\lambda_2$')
     axes[2].legend(loc='lower right', fontsize=10)
     axes[2].set_title('Protein fraction')
+    for ax in axes:
+        ax.set_xticks(np.linspace(0.1, 1, 10))
+        ax.set_yticks(np.linspace(0.1, 1, 10))
     plt.tight_layout()
     figName = 'Figures/' + gene_labels[0] + '_' + gene_labels[1] + '_transforms_gene_silencing.png'
     plt.savefig(figName, dpi=600)
