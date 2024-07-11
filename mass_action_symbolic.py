@@ -33,27 +33,27 @@ if __name__ == '__main__':
         if a2_as_fn_of_s1s2[0] == a2_as_fn_of_s1s2[1]:
             print('the solutions for s2 are identical')
     ####################################################################################################################
-    # # assign values to c1, c2, d1, d2, s1, s2 - from Eichel et.al. for hERG and SCN5A
+    # # # assign values to c1, c2, d1, d2, s1, s2 - from Eichel et.al. for hERG and SCN5A
     # c1_val = 0.17
-    # c2_val = 0.18
+    # c2_val = 0.071
     # d1_val = 0.48
     # d2_val = 0.70
-    # s1_eichel = 0.5
-    # s2_eichel = 0.58
-    # cond_frac_herg_eichel = 0.411
-    # cond_frac_scn5a_eichel = 0.619
+    # s1_eichel = 0.54
+    # s2_eichel = 0.59
+    # cond_frac_herg_eichel = 0.441
+    # cond_frac_scn5a_eichel = 0.53
     # gene_labels = ['hERG', 'SCN5A']
     # paperName = 'Eichel et.al.'
     ####################################################################################################################
     # assign values to c1, c2, d1, d2, s1, s2 - from Jameson et.al. for hERG and CACNA1C
     c1_val = 0.17
-    c2_val = 0.17
+    c2_val = 0.68
     d1_val = 0.345
     d2_val = 0.72
     s1_eichel = 0.52
     s2_eichel = 0.56
-    cond_frac_herg_eichel = 0.411
-    cond_frac_scn5a_eichel = 0.32
+    cond_frac_herg_eichel = 0.441
+    cond_frac_scn5a_eichel = 0.37
     gene_labels = ['hERG', 'CACNA1C']
     paperName = 'Jameson et.al.'
     # substitute values into the solution for a1 and a2
@@ -194,7 +194,7 @@ if __name__ == '__main__':
         ax.set_zlabel(r'$\lambda_{' + str(i+1) + '}$')
         ax.legend(loc='upper right',fontsize=10)
         ax.set_title(gene_labels[i])
-    plt.tight_layout(pad=0.3, w_pad=0.5, h_pad=0.5)
+    # plt.tight_layout(pad=0.3, w_pad=1.8, h_pad=1.8)
     plt.savefig('Figures/'+ gene_labels[0]+'_'+gene_labels[1]+'_lambdas_as_function_of_kappas.png')
     print(gene_labels[0] + ' protein generaton: ' + str(l1_experiment) + ' p1')
     print(gene_labels[1] + ' protein generation: ' + str(l2_experiment) + ' p2')
@@ -204,32 +204,45 @@ if __name__ == '__main__':
     Sigma_bivariate = covars[gene_labels[1]]  # np.array([[0.25, 0.25*(0.5/0.7)], [0.25*(0.5/0.7), 0.25]])
     print('transcripts to vary: ', gene_labels)
     print('Sigmas: ', Sigma_bivariate)
-    sampled_from_normal = np.random.multivariate_normal(mean=[0, 0], cov=Sigma_bivariate, size=1000)
-    sampled_from_normal = sampled_from_normal[(sampled_from_normal <= 0).all(axis=1)]
+    sampled_from_normal = np.random.multivariate_normal(mean=[0, 0], cov=Sigma_bivariate, size=5000)
+    sampled_from_normal = sampled_from_normal[(sampled_from_normal < 0).all(axis=1)]
     transcript_levels = np.exp(sampled_from_normal)
+    # compute spearman correlation coefficient
+    rho_transc, pval_transcr = sp.stats.spearmanr(transcript_levels[:,0], transcript_levels[:,1])
     # compute levels of free and translating mRNA
     a1_sample = a1_as_fn_of_s1s2_hERG_val[0](transcript_levels[:,0], transcript_levels[:,1])
     a2_sample = a2_as_fn_of_s1s2_SCN5A_val[0](transcript_levels[:,0], transcript_levels[:,1])
     a1a2_sample = a1_sample * a2_sample
     l1_sample = l1_as_fn_of_s1s2_hERG_val(transcript_levels[:,0], transcript_levels[:,1])
     l2_sample = l2_as_fn_of_s1s2_SCN5A_val(transcript_levels[:,0], transcript_levels[:,1])
+    rho_prot, pval_prot = sp.stats.spearmanr(l1_sample, l2_sample)
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
     axes = axes.ravel()
-    axes[0].scatter(transcript_levels[:,0],transcript_levels[:,1], color='k', s=5, alpha=0.35)
-    axes[0].scatter(s1_eichel, s2_eichel, color='orange', s=25, label=paperName)
+    axes[0].scatter(transcript_levels[:,0],transcript_levels[:,1], color='k', s=5, alpha=0.15)
+    axes[0].scatter(1, 1, color='orange', s=45, marker='s', label=paperName + ' scrambled shRNA')
+    axes[0].scatter(s1_eichel, s2_eichel, color='orange', s=45, label=paperName +' hERG1b shRNA')
+    axes[0].text(0.05, 0.95, r'$\rho = $' + str(round(rho_transc, 3)),
+                 fontsize=14, transform=axes[0].transAxes)
+    # axes[0].text(0.05, 0.9, r'$p$-val' + str(round(pval_transcr, 4)),
+    #              fontsize=14, transform=axes[0].transAxes)
     axes[0].set_xlabel(r'$\kappa_1$')
     axes[0].set_ylabel(r'$\kappa_2$')
     axes[0].legend(loc='lower right', fontsize=10)
     axes[0].set_title('Total mRNA fraction')
-    axes[1].scatter(a1_sample, a1a2_sample, color='k', s=5, alpha=0.35)
-    axes[1].scatter(a1_experiment, a1_experiment*a2_experiment, color='magenta', s=25,  label='Transformed')
+    axes[1].scatter(a1_sample, a1a2_sample, color='k', s=5, alpha=0.15)
+    axes[1].scatter(a1_experiment, a1_experiment*a2_experiment, color='magenta', s=45,  label='Transformed')
     axes[1].set_xlabel(r'$\alpha_1$')
     axes[1].set_ylabel(r'$\alpha_1\alpha_2$')
     axes[1].legend(loc='lower right', fontsize=10)
-    axes[1].set_title('Free mRNA fraction')
-    axes[2].scatter(l1_sample, l2_sample, color='k', s=5, alpha=0.35)
-    axes[2].scatter(l1_experiment, l2_experiment, color='magenta', s=25, label='Transformed')
-    axes[2].scatter(cond_frac_herg_eichel, cond_frac_scn5a_eichel, color='orange', s=25, label=paperName)
+    axes[1].set_title('translanting mRNA fraction')
+    axes[2].scatter(l1_sample, l2_sample, color='k', s=5, alpha=0.15)
+    axes[2].scatter(l1_experiment, l2_experiment, color='magenta', s=45, label='Transformed')
+    axes[2].scatter(1, 1, color='orange', s=45, marker='s',label=paperName + ' scrambled shRNA')
+    axes[2].text(0.05, 0.95, r'$\rho = $' + str(round(rho_prot, 3)),
+                 fontsize=14, transform=axes[2].transAxes)
+    # axes[2].text(0.05, 0.9, r'$p$-val' + str(round(pval_prot, 4)),
+    #              fontsize=14, transform=axes[2].transAxes)
+    axes[2].scatter(cond_frac_herg_eichel, cond_frac_scn5a_eichel, color='orange', s=45, label=paperName + ' hERG1b shRNA')
     axes[2].set_xlabel(r'$\lambda_1$')
     axes[2].set_ylabel('$\lambda_2$')
     axes[2].legend(loc='lower right', fontsize=10)
