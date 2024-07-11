@@ -24,6 +24,7 @@ if __name__ == '__main__':
     folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranscripted_test')
     folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranslated_test')
     folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_dependent_test')
+    names = ['independent', 'cotranscripted', 'cotranslated', 'dependent']
     # only plot the
     # create a figure for plotting APD90 only for each of the folders
     fig, axs = plt.subplots(2, 2, figsize=(10, 8))
@@ -136,7 +137,7 @@ if __name__ == '__main__':
         axs[iScenario].text(np.median(biomarkers['APD90']) + np.std(biomarkers['APD90']), ymax * 0.7,
                         'std: {:.2f}'.format(np.std(biomarkers['APD90'])))
         axs[iScenario].set_xlabel('APD90')
+        axs[iScenario].set_title(names[iScenario])
         axs[iScenario].set_xlim([0, 600])
-
-    fig.tight_layout(rect=[0, 0.03, 0.98, 0.95])
+    fig.tight_layout()
     fig.savefig(FigureFolderName + '/APD90_hists.png', dpi=400)
