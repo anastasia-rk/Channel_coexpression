@@ -4,6 +4,8 @@ import pandas as pd
 from cmapPy.pandasGEXpress.parse_gct import parse
 from cmapPy.pandasGEXpress.write_gct import write
 from setup import *
+import matplotlib.lines as mlines
+import corner
 
 # main
 if __name__ == '__main__':
@@ -14,6 +16,7 @@ if __name__ == '__main__':
     gene_names = gtex_df['Description'].tolist()
     # find the string CACNA1C in the list of gene names
     genes_of_interest = ['KCNH2', 'KCNQ1', 'CACNA1C', 'SCN5A', 'KCND3']
+    currents_of_interest = ['IKr', 'IKs', 'ICaL', 'INa', 'Ito']
     # find all strings that contain string 'RIN3' in the list of gene names
     rins_of_interest = [s for s in gene_names if 'score' in s]
 
@@ -23,6 +26,8 @@ if __name__ == '__main__':
         indices_of_interest.append(gene_names.index(gene))
     # only keep the genes of interest in the dataframe
     gtex_df = gtex_df.iloc[indices_of_interest]
+    # make descriptions the index
+    gtex_df = gtex_df.set_index('Description')
     # export RIN numbers from the attributes table
     attributesFilename = '../GTEx_data/GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt'
     attributes_df = pd.read_csv(attributesFilename, sep='\t', index_col=0)
@@ -52,7 +57,7 @@ if __name__ == '__main__':
         if iAx == 0:
             ax.legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('correlation_GTEx.png')
+    plt.savefig('Figures/correlation_GTEx.png')
 
     fig, axs = plt.subplots(2, 2, figsize=(10, 10))
     axs = axs.ravel()
@@ -69,7 +74,7 @@ if __name__ == '__main__':
         if iAx == 0:
             ax.legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('correlation_scaled_GTEx.png')
+    plt.savefig('Figures/correlation_scaled_GTEx.png')
 
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
     axs = axs.ravel()
@@ -81,7 +86,7 @@ if __name__ == '__main__':
         if iAx == 0:
             ax.legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('correlation_GTEx_log2.png')
+    plt.savefig('Figures/correlation_GTEx_log2.png')
 
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
     axs = axs.ravel()
@@ -93,7 +98,7 @@ if __name__ == '__main__':
         if iAx == 0:
             ax.legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('correlation_GTEx_log.png')
+    plt.savefig('Figures/correlation_GTEx_log.png')
 
     # for all entries in gtex_high_rin_df, calculate make Q-Q plot
     fig, axs = plt.subplots(3, 5, figsize=(20,12))
@@ -111,7 +116,7 @@ if __name__ == '__main__':
         sp.stats.probplot(np.log(np.log(gtex_high_rin_df.iloc[iAx, 3:].astype(float)+1)), plot=ax)
         ax.set(xlabel='Theoretical Quantiles', ylabel='Ordered Values', title=genes_of_interest[iAx]+',log(log(TMP+1))')
     fig.tight_layout(pad=0.3)
-    plt.savefig('QQ_GTEx.png')
+    plt.savefig('Figures/QQ_GTEx.png')
 
     ####################################################################################################################
     # add one and convert to log scale for all entrie in gtex_high_rin_df
@@ -136,6 +141,52 @@ if __name__ == '__main__':
 
     with open('Pickles/gtex_covariances.pkl', 'wb') as f:
         pickle.dump(covariances_log, f)
+
+    # extract the multivariate covariance for CANCA1C, SCN5A and KCNH2
+    # subsetNames = ['KCNH2', 'CACNA1C','SCN5A']
+    subsetNames = genes_of_interest
+    # create a list of currents ordered by the subsetNames
+    currents_of_subset = ['']*len(subsetNames)
+    for i, subsetName in enumerate(subsetNames):
+        currents_of_subset[i] = currents_of_interest[genes_of_interest.index(subsetName)]
+    # cobmine strings in the list currents_of_subset into a single string with '_' separator
+    subsetName = '_'.join(currents_of_subset)
+    # compute covariance of multi-variate distribution
+    subset = gtex_high_rin_df_log.loc[subsetNames]
+    covar_log_subset = np.cov(subset)
+    print('Subset genes:', subsetNames)
+    print('Subset covariances:')
+    print(covar_log_subset)
+    means_log_subset = np.mean(subset,axis=1)
+    with open('Pickles/'+subsetName+'_covariance.pkl', 'wb') as f:
+        pickle.dump(covar_log_subset, f)
+
+    # build corner plot for the subset
+    # add to each string in subsetNames the string 'log(TPM+1)'
+    subsetNamesForCorner = [s + ', log(TPM+1)' for s in subsetNames]
+    mean_line = mlines.Line2D([], [], color='#2ca02c', label='Empirical mean')
+    dummyline = mlines.Line2D([], [], color='k', linestyle='--', label=r'$2\sigma$ region')
+    mean_empirical = means_log_subset.values
+    mean_p3std = means_log_subset.values + 1*np.sqrt(np.diag(covar_log_subset))
+    mean_m3std = means_log_subset.values - 1*np.sqrt(np.diag(covar_log_subset))
+    fig = corner.corner(
+        subset.T, labels=subsetNames,show_titles=True,
+        # quantiles=[0.16, 0.84],title_quantiles=['0.16','0.5','0.84'],
+        title_kwargs={"fontsize": 10},title_fmt='.4f')
+    corner.overplot_lines(fig, mean_empirical, color='#2ca02c')
+    corner.overplot_points(fig, mean_empirical[None], marker="s", color="#2ca02c")
+    corner.overplot_lines(fig, mean_p3std, color='k',linestyle='--')
+    corner.overplot_lines(fig, mean_m3std, color='k',linestyle='--')
+    plt.legend(handles=[mean_line, dummyline], bbox_to_anchor=(0., 1.15, 1., .0), loc=8)
+    # add a title
+    fig.suptitle('log(TPM+1) distributions', fontsize=16)
+    # plt.tight_layout()
+    plt.savefig('Figures/'+subsetName+'_corner.png',dpi=400)
+
+    # plot scatter matrix
+    grr = pd.plotting.scatter_matrix(subset.T, figsize=(15, 15), marker='o', color='darkorange',
+                            hist_kwds={'bins': 20}, s=30, alpha=.8)
+    plt.savefig('Figures/'+subsetName+'_scatter_matrix.png')
 
     ####################################################################################################################
     # for each entry in covariances_log, calculate the correlation coefficient
@@ -170,7 +221,7 @@ if __name__ == '__main__':
         axs[ikey].set_ylabel(key+', TPM')
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('contour_bivariate_decimal.png')
+    plt.savefig('Figures/contour_bivariate_decimal.png')
 
     # plot for scaled stuff
     from matplotlib import patches
@@ -202,7 +253,7 @@ if __name__ == '__main__':
         axs[ikey].set_ylabel(key+', relative to normal level')
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('contour_bivariate_decimal_scaled.png')
+    plt.savefig('Figures/contour_bivariate_decimal_scaled.png')
 
     # plot for normal stuff
     from matplotlib import patches
@@ -231,7 +282,7 @@ if __name__ == '__main__':
         axs[ikey].set_ylabel(key+', log(TPM+1)')
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('contour_bivariate_log.png')
+    plt.savefig('Figures/contour_bivariate_log.png')
     # plot for scaled stuff
     from matplotlib import patches
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
@@ -262,7 +313,7 @@ if __name__ == '__main__':
         axs[ikey].set_ylabel(key+', log(TPM+1) - mean')
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('contour_bivariate_log_scaled.png')
+    plt.savefig('Figures/contour_bivariate_log_scaled.png')
 
 
 
@@ -298,7 +349,7 @@ if __name__ == '__main__':
         axs[ikey].set_yscale('symlog', base=2)
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('sampled_from_bivariate_log.png')
+    plt.savefig('Figures/sampled_from_bivariate_log.png')
 
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
     axs = axs.ravel()
@@ -321,7 +372,7 @@ if __name__ == '__main__':
         axs[ikey].set_ylabel(key+',TMP')
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('sampled_from_bivariate_decimal.png')
+    plt.savefig('Figures/sampled_from_bivariate_decimal.png')
 
     ####################################################################################################################
     # sample from zero mean multivariate normal distribution with covariances_log
@@ -356,7 +407,7 @@ if __name__ == '__main__':
         # axs[ikey].set_xscale('symlog', base=2)
         # axs[ikey].set_yscale('symlog', base=2)
     fig.tight_layout(pad=0.3)
-    plt.savefig('sampled_from_bivariate_zeromean_log.png')
+    plt.savefig('Figures/sampled_from_bivariate_zeromean_log.png')
 
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
     axs = axs.ravel()
@@ -379,7 +430,7 @@ if __name__ == '__main__':
         axs[ikey].set_ylabel(key+',TMP')
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('sampled_from_bivariate_zeromean_decimal.png')
+    plt.savefig('Figures/sampled_from_bivariate_zeromean_decimal.png')
 
     ####################################################################################################################
     # reduce the covariance matrix a bit to reduce the effect of heavy tailes in the GTEx data
@@ -418,7 +469,7 @@ if __name__ == '__main__':
         # axs[ikey].set_xscale('symlog', base=2)
         # axs[ikey].set_yscale('symlog', base=2)
     fig.tight_layout(pad=0.3)
-    plt.savefig('sampled_from_bivariate_zeromean_sclaed_log.png')
+    plt.savefig('Figures/sampled_from_bivariate_zeromean_sclaed_log.png')
 
     fig, axs = plt.subplots(2, 2, figsize=(10,10))
     axs = axs.ravel()
@@ -441,6 +492,6 @@ if __name__ == '__main__':
         axs[ikey].set_ylabel(key+',TMP')
         axs[ikey].legend()
     fig.tight_layout(pad=0.3)
-    plt.savefig('sampled_from_bivariate_zeromean_scaled_decimal.png')
+    plt.savefig('Figures/sampled_from_bivariate_zeromean_scaled_decimal.png')
 
     print('pause here')
