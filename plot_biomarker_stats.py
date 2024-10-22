@@ -19,6 +19,7 @@ if __name__ == '__main__':
     DataFolderName = 'Simulated_data_Tomek_correct'
     expressions_to_vary = ['IKr', 'ICaL']
     gains_to_vary = ['gain_kr', 'gain_ca']
+    folderNamePrefix = '_'.join(expressions_to_vary)
 
     # possible currents that we can vary
     biomarkerNames = ['APD90', 'APD60', 'APD40', 'APA', 'TRI60', 'TRI40', 'EAD', '90PERCENT', '90to90', 'Alternan',
@@ -34,18 +35,13 @@ if __name__ == '__main__':
     ylabels = [ylabels[i] for i in iExpressions]
 
     folderNames = []
-    # folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_independent')
-    # folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranscripted')
-    # folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranslated')
-    # folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_dependent')
-    names = ['independent', 'cotranscripted', 'cotranslated', 'dependent']
-    # in case we vary all
-    names = ['independent', 'cotranscripted', 'dependent']
+    if folderNamePrefix == 'all':
+        # in case we vary all - we don't yet have the translation implemented
+        names = ['independent', 'cotranscripted', 'dependent']
+    else:
+        names = ['independent', 'cotranscripted', 'cotranslated', 'dependent']
     for name in names:
-        # in case we have pairwise variation
-        # forlderName = expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_' + name
-        # in case we vary all
-        forlderName = 'all_'+ name
+        forlderName = folderNamePrefix + '_' + name
         folderNames.append(forlderName)
     #################################################################################################################
     # create a figure for plotting APD90 only for each of the folders
@@ -62,11 +58,16 @@ if __name__ == '__main__':
         well_behaved = biomarkers.loc[biomarkers['Pro-Arrhythmic'] == False]
 
         # plot the scatter matrix of all columns that contain the word 'gain' split by pro-arrythmic and well-behaved on the same figure
-        scatter_matrix = pd.plotting.scatter_matrix(well_behaved.loc[:,well_behaved.columns.str.contains('gain')],marker='o', color='k', alpha=0.2, figsize=(10, 10), diagonal='kde')
-        # scatter_matrix = pd.plotting.scatter_matrix(pro_arrythmic.loc[:,pro_arrythmic.columns.str.contains('gain')], marker='x', color='magenta', alpha=0.2, figsize=(10, 10), diagonal='kde')
+        # extact the df that only has gains we varied
+        well_behaved_varied_gains = well_behaved[gains_to_vary]
+        pro_arrythmic_varied_gains = pro_arrythmic[gains_to_vary]
+        scatter_matrix = pd.plotting.scatter_matrix(well_behaved_varied_gains,marker='o', color='k', alpha=0.2, figsize=(10, 10), diagonal='kde')
+        # if the pro-arrythmic is not empty, plot it as well
+        if not pro_arrythmic.empty:
+            scatter_matrix = pd.plotting.scatter_matrix(pro_arrythmic_varied_gains, marker='x', color='orange', alpha=0.2, figsize=(10, 10), diagonal='kde')
         # plt.tight_layout()
         plt.savefig(figName + 'scatter_matrix.png', dpi=300)
-
+        print(folderName + ' scatter matrix saved')
         #################################################################################################################
 
         # # plot the biomarkers
@@ -160,23 +161,24 @@ if __name__ == '__main__':
         # plt.tight_layout()
         # plt.savefig(figName + 'conductance_levels.png', dpi=300)
         #################################################################################################################
-    #     # plot the APD90 hists in the axs
-    #     axs[iScenario].hist(biomarkers['APD90'], bins=20, density=True, histtype='step')
-    #     # add mean, median and std to the plot
-    #     axs[iScenario].axvline(np.mean(biomarkers['APD90']), color='k', linestyle='solid', linewidth=1)
-    #     axs[iScenario].axvline(np.median(biomarkers['APD90']), color='k', linestyle='dashed', linewidth=1)
-    #     axs[iScenario].axvline(np.median(biomarkers['APD90']) + np.std(biomarkers['APD90']), color='grey',
-    #                           linestyle='dotted', linewidth=1)
-    #     axs[iScenario].axvline(np.mean(biomarkers['APD90']) - np.std(biomarkers['APD90']), color='grey',
-    #                             linestyle='dotted', linewidth=1)
-    #     axs[iScenario].text(np.mean(biomarkers['APD90']), ymax * 0.9,
-    #                     'mean: {:.2f}'.format(np.mean(biomarkers['APD90'])))
-    #     # axs[iScenario].text(np.median(biomarkers['APD90']), ymax * 0.8,
-    #     #                 'md: {:.2f}'.format(np.median(biomarkers['APD90'])))
-    #     axs[iScenario].text(np.median(biomarkers['APD90']) + np.std(biomarkers['APD90']), ymax * 0.7,
-    #                     'std: {:.2f}'.format(np.std(biomarkers['APD90'])))
-    #     axs[iScenario].set_xlabel('APD90')
-    #     axs[iScenario].set_title(names[iScenario])
-    #     axs[iScenario].set_xlim([0, 600])
-    # fig.tight_layout()
-    # fig.savefig(FigureFolderName + '/APD90_hists.png', dpi=400)
+        # plot the APD90 hists in the axs
+        axs[iScenario].hist(biomarkers['APD90'], bins=20, density=True, histtype='step',color='k')
+        # add mean, median and std to the plot
+        axs[iScenario].axvline(np.mean(biomarkers['APD90']), color='orange', linestyle='solid', linewidth=1)
+        axs[iScenario].axvline(np.median(biomarkers['APD90']), color='orange', linestyle='dashed', linewidth=1)
+        ymin, ymax = axs[iScenario].get_ylim()
+        axs[iScenario].axvline(np.median(biomarkers['APD90']) + np.std(biomarkers['APD90']), color='orange',
+                              linestyle='dotted', linewidth=1)
+        axs[iScenario].axvline(np.mean(biomarkers['APD90']) - np.std(biomarkers['APD90']), color='orange',
+                                linestyle='dotted', linewidth=1)
+        axs[iScenario].text(np.mean(biomarkers['APD90']), ymax * 0.9,
+                        'mean: {:.2f}'.format(np.mean(biomarkers['APD90'])))
+        # axs[iScenario].text(np.median(biomarkers['APD90']), ymax * 0.8,
+        #                 'md: {:.2f}'.format(np.median(biomarkers['APD90'])))
+        axs[iScenario].text(np.median(biomarkers['APD90']) + np.std(biomarkers['APD90']), ymax * 0.7,
+                        'std: {:.2f}'.format(np.std(biomarkers['APD90'])))
+        axs[iScenario].set_xlabel('APD90')
+        axs[iScenario].set_title(names[iScenario])
+        axs[iScenario].set_xlim([0, 600])
+    fig.tight_layout()
+    fig.savefig(FigureFolderName + '/' + folderNamePrefix + '_APD90_hists.png', dpi=400)

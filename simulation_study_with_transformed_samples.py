@@ -13,7 +13,7 @@ import pickle
 import gc
 from tqdm import tqdm
 matplotlib.use('Agg')
-from mass_action_correct import *
+from mass_action_dimers_6_subsets import *
 
 # definitions
 def run_simulation_w_points(expressions_to_vary,multiplier_values,simModel,DataFolderName,FigureFolderName,folderName,nTries=1000):
@@ -341,19 +341,20 @@ if __name__ == '__main__':
 # select which expression levels we are going to vary
 ########################################################################################################################
     # always include IKr as we know all ratios for it
-    expressions_to_vary = ['IKr', 'ICaL']
+    expressions_to_vary = ['IKr', 'INa']
     iExpressions = [currentNames.index(expression) for expression in expressions_to_vary]
     gain_labels = [gain_labels[i] for i in iExpressions]
     gains_to_vary = [gainNames[i] for i in iExpressions]
     ylabels_of_varied = [ylabels[0]] + [ylabels[i+1] for i in iExpressions]
     gene_names = [gene_names[i] for i in iExpressions[1:]]
+    folderNamePrefix = '_'.join(expressions_to_vary)
 ########################################################################################################################
         # independently varying expression of I_Kr and I_CaL
 ########################################################################################################################
-    print('Independently varied conductances for I_Kr and I_CaL')
+    print('Independently varied conductances for ' + folderNamePrefix)
     # select which conductances we wish to vary
     # create the folder for storing the results
-    folderName = expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_independent'
+    folderName = folderNamePrefix + '_independent'
     if isATest:
         folderName = folderName + '_test'
     if not os.path.exists(DataFolderName + '/' + folderName):
@@ -376,10 +377,10 @@ if __name__ == '__main__':
 ########################################################################################################################
     # covaried coexpression of I_Kr and I_CaL at transcription level
 ########################################################################################################################
-    print('Covaried conductances for I_Kr and I_CaL')
+    print('Covaried conductances for ' + folderNamePrefix + ' (converted from the co-transcription samples)')
     # create folder to store selected simulation outputs
     # baseline conductances of the currents of interest
-    folderName = expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranscripted'
+    folderName = folderNamePrefix + '_cotranscripted'
     if isATest:
         folderName = folderName + '_test'
     if not os.path.exists(DataFolderName + '/' + folderName):
@@ -398,9 +399,9 @@ if __name__ == '__main__':
     ########################################################################################################################
     # covaried coexpression of I_Kr and I_CaL with cotransaltion covariance
     ########################################################################################################################
-    print('Covaried conductances for I_Kr and I_CaL (converted from the co-transcription samples)')
+    print('Covaried conductances for' + folderNamePrefix +  '(converted from the co-transcription samples)')
     # create folder to store selected simulation outputs
-    folderName = expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranslated'
+    folderName = folderNamePrefix + '_cotranslated'
     if isATest:
         folderName = folderName + '_test'
     if not os.path.exists(DataFolderName + '/' + folderName):
@@ -415,9 +416,9 @@ if __name__ == '__main__':
 ########################################################################################################################
     # Dependent variation of ion channel conductances
 ########################################################################################################################
-    print('Dependent variation of conductances for I_Kr and I_CaL')
+    print('Dependent variation of conductances for ' + folderNamePrefix)
     # create folder to store selected simulation outputs
-    folderName = expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_dependent'
+    folderName = folderNamePrefix + '_dependent'
     if isATest:
         folderName = folderName + '_test'
     if not os.path.exists(DataFolderName + '/' + folderName):

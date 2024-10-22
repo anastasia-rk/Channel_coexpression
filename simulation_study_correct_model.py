@@ -12,7 +12,7 @@ import pickle
 import gc
 from tqdm import tqdm
 matplotlib.use('Agg')
-from mass_action_correct import *
+from mass_action_dimers_6_subsets import *
 
 # definitions
 def run_simulation_w_points(expressions_to_vary,multiplier_pairs,simModel,DataFolderName,FigureFolderName,folderName,nTries=1000):

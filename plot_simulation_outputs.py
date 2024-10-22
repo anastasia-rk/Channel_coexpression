@@ -17,8 +17,11 @@ if __name__ == '__main__':
     # if there is no folder for figures, create one
     FigureFolderName = 'Figures_Tomek_correct'
     DataFolderName = 'Simulated_data_Tomek_correct'
-    expressions_to_vary = ['IKr', 'ICaL']
-    gains_to_vary = ['gain_kr', 'gain_ca']
+    # expressions_to_vary = ['IKr', 'ICaL']
+    # gains_to_vary = ['gain_kr', 'gain_ca']
+    expressions_to_vary = ['IKr', 'INa']
+    gains_to_vary = ['gain_kr', 'gain_na']
+    folderNamePrefix = '_'.join(expressions_to_vary)
 
     # possible currents that we can vary
     biomarkerNames = ['APD90', 'APD60', 'APD40', 'APA', 'TRI60', 'TRI40', 'EAD', '90PERCENT', '90to90', 'Alternan',
@@ -34,21 +37,26 @@ if __name__ == '__main__':
     ylabels = [ylabels[i] for i in iExpressions]
 
     folderNames = []
-    folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_independent')
-    folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranscripted')
-    folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_cotranslated')
-    folderNames.append(expressions_to_vary[0] + '_' + expressions_to_vary[1] + '_dependent')
-    names = ['independent', 'cotranscripted', 'cotranslated', 'dependent']
+    if folderNamePrefix == 'all':
+        # in case we vary all - we don't yet have the translation implemented
+        names = ['independent', 'cotranscripted', 'dependent']
+    else:
+        names = ['independent', 'cotranscripted', 'cotranslated', 'dependent']
+    for name in names:
+        forlderName = folderNamePrefix + '_' + name
+        folderNames.append(forlderName)
     # only plot the
     # create a figure for plotting APD90 only for each of the folders
     fig, axs = plt.subplots(2, 2, figsize=(10, 8))
     axs = axs.ravel()
     for iScenario, folderName in enumerate(folderNames):
-        with open(os.path.join(DataFolderName + '/' + folderName +  '/pro_arrhythmic_results.pkl'), 'rb') as handle:
-            simRes_pro_arrhythmic = pickle.load(handle)
+        # if pro_arrhythmic_results.pkl is not present, skip the folder
+        if os.path.exists(DataFolderName + '/' + folderName +  '/pro_arrhythmic_results.pkl'):
+            with open(os.path.join(DataFolderName + '/' + folderName +  '/pro_arrhythmic_results.pkl'), 'rb') as handle:
+                simRes_pro_arrhythmic = pickle.load(handle)
         with open(os.path.join(DataFolderName + '/' + folderName +  '/simulationResults.pkl'), 'rb') as handle:
             simulationResults = pickle.load(handle)
-        biomarkers = pd.load_csv(DataFolderName + '/' + folderName +  '/biomarkers.csv')
+        biomarkers = pd.read_csv(DataFolderName + '/' + folderName +  '/biomarkers.csv')
         pro_arrythmic = biomarkers.loc[biomarkers['Pro-Arrhythmic'] == True]
         well_behaved = biomarkers.loc[biomarkers['Pro-Arrhythmic'] == False]
         #################################################################################################################
@@ -67,7 +75,7 @@ if __name__ == '__main__':
                                    label='Multiplier on ' + gain_labels[iGain])
                 axs1[iAxs].scatter(pro_arrythmic[gainName], pro_arrythmic[biomarker], s=5, color='k')
                 if iGain == len(gains_to_vary):
-                    axs1[iAxs].scatter(pro_arrythmic[gainName], pro_arrythmic[biomarker], s=5, color='k',
+                    axs1[iAxs].scatter(pro_arrythmic[gainName], pro_arrythmic[biomarker], s=5, color='orange',
                                        label='Pro-Arrhythmic')
             axs1[iAxs].set_xlabel(r'Multiplier  values')
             axs1[iAxs].set_ylabel(biomarker)
@@ -88,13 +96,13 @@ if __name__ == '__main__':
         for iBiomarker, biomarker in enumerate(biomarkerNames):
             if biomarker == 'Alternan' or biomarker == 'EAD' or biomarker == 'Pro-Arrhythmic':
                 continue
-            axs2[iAxs].hist(biomarkers[biomarker], bins=20, density=True, histtype='step')
+            axs2[iAxs].hist(biomarkers[biomarker], bins=20, density=True, histtype='step',color='k')
             # add mean, median and std to the plot
-            axs2[iAxs].axvline(np.mean(biomarkers[biomarker]), color='k', linestyle='solid', linewidth=1)
-            axs2[iAxs].axvline(np.median(biomarkers[biomarker]), color='k', linestyle='dashed', linewidth=1)
-            axs2[iAxs].axvline(np.median(biomarkers[biomarker]) + np.std(biomarkers[biomarker]), color='grey',
+            axs2[iAxs].axvline(np.mean(biomarkers[biomarker]), color='orange', linestyle='solid', linewidth=1)
+            axs2[iAxs].axvline(np.median(biomarkers[biomarker]), color='orange', linestyle='dashed', linewidth=1)
+            axs2[iAxs].axvline(np.median(biomarkers[biomarker]) + np.std(biomarkers[biomarker]), color='orange',
                                linestyle='dotted', linewidth=1)
-            axs2[iAxs].axvline(np.mean(biomarkers[biomarker]) - np.std(biomarkers[biomarker]), color='grey',
+            axs2[iAxs].axvline(np.mean(biomarkers[biomarker]) - np.std(biomarkers[biomarker]), color='orange',
                                linestyle='dotted', linewidth=1)
             ymin, ymax = axs2[iAxs].get_ylim()
             axs2[iAxs].text(np.mean(biomarkers[biomarker]), ymax * 0.9,
@@ -115,8 +123,8 @@ if __name__ == '__main__':
         fig3, axs3 = plt.subplots(1, 2, figsize=(10, 4))
         axs3 = axs3.ravel()
         axs3[0].plot([0.125, 8],[0.125, 8], color='k', linestyle='dashed', linewidth=0.5,label='$\lambda_1 = \lambda_2$')
-        axs3[0].scatter(biomarkers[gains_to_vary[0]], biomarkers[gains_to_vary[1]], s=5,label='($\lambda_1,\lambda_2$) used in simulatiion')
-        axs3[0].scatter(biomarkers[gains_to_vary[0]], biomarkers[gains_to_vary[1]], s=5, color='k',label='Pro-Arrhythmic')
+        axs3[0].scatter(well_behaved[gains_to_vary[0]], well_behaved[gains_to_vary[1]], s=5,color='k',label='($\lambda_1,\lambda_2$) used in simulatiion')
+        axs3[0].scatter(pro_arrythmic[gains_to_vary[0]], pro_arrythmic[gains_to_vary[1]], s=5, color='orange',label='Pro-Arrhythmic')
         # axs3[0].scatter(simulationResults['gain_kr'], simulationResults['gain_ca'], s=5,label='($\lambda_1,\lambda_2$) used in simulatiion')
         axs3[0].set_xlabel(r'Multiplier on '+ gains_to_vary[0])
         axs3[0].set_ylabel(r'Multiplier on '+ gains_to_vary[1])
@@ -130,7 +138,11 @@ if __name__ == '__main__':
         # plot the ap traces
         for iTrace in range(1000):
             times = simulationResults['Time'][iTrace]/1000
-            axs3[1].plot(times, simulationResults['Voltage'][iTrace],linewidth=0.5)
+            axs3[1].plot(times, simulationResults['Voltage'][iTrace],linewidth=0.5,color='k')
+        if simRes_pro_arrhythmic is not None:
+            nTraces = len(simRes_pro_arrhythmic['Time'])
+            for iTrace in range(nTraces):
+                axs3[1].plot(simRes_pro_arrhythmic['Time'][iTrace]/1000, simRes_pro_arrhythmic['Voltage'][iTrace],linewidth=0.5,color='orange')
             # axs3[2].plot(times, simulationResults[expressions_to_vary[0]][iTrace],linewidth=0.5)
             # axs3[3].plot(times, simulationResults[expressions_to_vary[1]][iTrace],linewidth=0.5)
         axs3[1].set_xlabel('Time [s]')

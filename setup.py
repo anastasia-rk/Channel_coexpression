@@ -12,6 +12,10 @@ import gc
 from tqdm import tqdm
 matplotlib.use('Agg')
 
+genes_in_rhythmonome = ['ATP1A1', 'ATP2A2', 'CACNA1C', 'KCND3', 'KCNH2', 'KCNIP2', 'KCNJ2', 'KCNQ1',
+                     'RYR2', 'SCN5A', 'SLC8A1', 'ATP1A2', 'ATP1A3', 'CACNA2D1', 'CACNA2D2', 'CACNB2',
+                     'CALM1', 'CASQ2', 'KCNA4', 'KCNJ12', 'PLN', 'SCN1B', 'CACNA1G', 'CACNA1H',
+                     'GATA4', 'GJA1', 'GJA5', 'GJC1', 'HCN4', 'MYL2', 'MYL7', 'NKX2-5']
 # main
 if __name__ == '__main__':
     # if there is no folder for figures, create one

@@ -13,7 +13,7 @@ import pickle
 import gc
 from tqdm import tqdm
 matplotlib.use('Agg')
-from mass_action_correct import *
+from mass_action_dimers_6_subsets import *
 
 # definitions
 def run_simulation_w_points(expressions_to_vary,multiplier_values,simModel,DataFolderName,FigureFolderName,folderName,nTries=1000):
@@ -321,19 +321,22 @@ if __name__ == '__main__':
 # select which expression levels we are going to vary
 ########################################################################################################################
     # always include IKr as we know all ratios for it
-    expressions_to_vary = currentNames
+    # expressions_to_vary = currentNames
+    expression_to_vary = ['IKr', 'INa']
     iExpressions = [currentNames.index(expression) for expression in expressions_to_vary]
     gain_labels = [gain_labels[i] for i in iExpressions]
     gains_to_vary = [gainNames[i] for i in iExpressions]
     ylabels_of_varied = [ylabels[0]] + [ylabels[i+1] for i in iExpressions]
     gene_names = [gene_names[i] for i in iExpressions[1:]]
 ########################################################################################################################
-        # independently varying expression of I_Kr and I_CaL
+     # independently varying expression
 ########################################################################################################################
     print('Independently varied conductances for all principal genes')
     # select which conductances we wish to vary
     # create the folder for storing the results
-    folderName = 'all_independent'
+    # folderName = 'all_independent'
+    # join expressions to vary into one string separated by _
+    folderName = '_'.join(expressions_to_vary) + '_independent'
     if isATest:
         folderName = folderName + '_test'
     if not os.path.exists(DataFolderName + '/' + folderName):
